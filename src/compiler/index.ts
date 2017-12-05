@@ -28,6 +28,7 @@ import {
   valueFromValueNode,
   filePathForNode,
   withTypenameFieldAddedWhereNeeded,
+  withIdFieldAddedWhereNeeded,
   isBuiltInScalarType,
   isMetaFieldName
 } from '../utilities/graphql';
@@ -131,6 +132,7 @@ export function compileToIR(
   document: DocumentNode,
   options: CompilerOptions = {}
 ): CompilerContext {
+  document = withIdFieldAddedWhereNeeded(schema, document);
   if (options.addTypename) {
     document = withTypenameFieldAddedWhereNeeded(document);
   }

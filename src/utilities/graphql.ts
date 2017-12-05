@@ -1,5 +1,7 @@
 import {
   visit,
+  visitWithTypeInfo,
+  TypeInfo,
   Kind,
   isEqualType,
   isAbstractType,
@@ -45,6 +47,32 @@ export function isMetaFieldName(name: string) {
 }
 
 const typenameField = { kind: Kind.FIELD, name: { kind: Kind.NAME, value: '__typename' } };
+const idField = { kind: Kind.FIELD, name: { kind: Kind.NAME, value: 'id' } };
+
+export function withIdFieldAddedWhereNeeded(schema: GraphQLSchema, ast: ASTNode) {
+  const typeInfo = new TypeInfo(schema);
+  return visit(ast, visitWithTypeInfo(typeInfo, {
+    leave(node: ASTNode) {  
+      if (!(node.kind === 'Field' || node.kind === 'FragmentDefinition')) return undefined;
+      if (!node.selectionSet) return undefined;
+      const outputType = typeInfo.getType();
+      if (outputType instanceof GraphQLObjectType || outputType instanceof GraphQLInterfaceType) {
+        const hasIdField = !!outputType.getFields()['id'];
+        if (hasIdField) {
+          return {
+            ...node,
+            selectionSet: {
+              ...node.selectionSet,
+              selections: [idField, ...node.selectionSet.selections]
+            }
+          }
+        }
+      }
+      // 
+      return node;
+    }
+  }));
+}
 
 export function withTypenameFieldAddedWhereNeeded(ast: ASTNode) {
   return visit(ast, {
